@@ -214,10 +214,16 @@
           </Properties>
         </Component>
         <Component class="javax.swing.JTextField" name="txtNama">
+          <Events>
+            <EventHandler event="focusGained" listener="java.awt.event.FocusListener" parameters="java.awt.event.FocusEvent" handler="txtNamaFocusGained"/>
+          </Events>
         </Component>
         <Component class="javax.swing.JTextField" name="txtEmail">
         </Component>
         <Component class="javax.swing.JTextField" name="txtTelepon">
+          <Events>
+            <EventHandler event="keyTyped" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="txtTeleponKeyTyped"/>
+          </Events>
         </Component>
         <Container class="javax.swing.JScrollPane" name="jScrollPane1">
 

@@ -19,6 +19,7 @@ public class FromBukuAlamat extends javax.swing.JFrame {
 
     public FromBukuAlamat() {
         initComponents();
+        clear();
         loadTable();
 
     }
@@ -106,6 +107,18 @@ private void loadTable() {
 
         jLabel5.setForeground(new java.awt.Color(255, 255, 255));
         jLabel5.setText("Alamat :");
+
+        txtNama.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                txtNamaFocusGained(evt);
+            }
+        });
+
+        txtTelepon.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                txtTeleponKeyTyped(evt);
+            }
+        });
 
         txtAlamat.setColumns(20);
         txtAlamat.setRows(5);
@@ -295,49 +308,197 @@ private void loadTable() {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnTambahActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTambahActionPerformed
-            try {
-        KontakController controller = new KontakController();
-        controller.addContact(
-            txtNama.getText(),
-            txtTelepon.getText(),
-            txtEmail.getText(),
-            txtAlamat.getText()
-        );
-        JOptionPane.showMessageDialog(this,"Berhasil ditambahkan!");
+    String nama = txtNama.getText().trim();
+    String telepon = txtTelepon.getText().trim();
+    String email = txtEmail.getText().trim();
+    String alamat = txtAlamat.getText().trim();
+
+    // Validasi semua input terisi
+    if (nama.isEmpty() || telepon.isEmpty() || email.isEmpty() || alamat.isEmpty()) {
+        JOptionPane.showMessageDialog(this,
+            "Semua input harus diisi!",
+            "Input Tidak Lengkap",
+            JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    // Validasi telepon hanya angka
+    if (!telepon.matches("\\d+")) {
+        JOptionPane.showMessageDialog(this,
+            "Nomor telepon hanya boleh angka!",
+            "Input Salah",
+            JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+
+    // Validasi panjang nomor telepon
+    if (telepon.length() < 8 || telepon.length() > 12) {
+        JOptionPane.showMessageDialog(this,
+            "Nomor telepon harus 8–12 digit!",
+            "Nomor Telepon Tidak Valid",
+            JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+
+    try {
+        // Cek nomor telepon duplikat
+        if (kontakController.isDuplicatePhoneNumber(telepon, null)) {
+            JOptionPane.showMessageDialog(this,
+                "Nomor telepon sudah terdaftar!",
+                "Duplikasi Nomor",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Simpan ke database
+        kontakController.addContact(nama, telepon, email, alamat);
+
+        JOptionPane.showMessageDialog(this,
+            "Kontak berhasil ditambahkan!",
+            "Sukses",
+            JOptionPane.INFORMATION_MESSAGE);
+
+        // reload table
         loadTable();
+
+        // Clear input
         clear();
-    } catch (SQLException e) {
+
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(this,
+            "Terjadi kesalahan saat menambah kontak!",
+            "Error",
+            JOptionPane.ERROR_MESSAGE);
+        e.printStackTrace();
     }
     }//GEN-LAST:event_btnTambahActionPerformed
 
     private void btnUpdateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUpdateActionPerformed
-        try {
-        int id = Integer.parseInt(tableKontak.getValueAt(tableKontak.getSelectedRow(), 0).toString());
+    try {
+        int row = tableKontak.getSelectedRow();
 
-        KontakController controller = new KontakController();
-        controller.updateContact(
-            id,
-            txtNama.getText(),
-            txtTelepon.getText(),
-            txtEmail.getText(),
-            txtAlamat.getText()
+        // Tidak ada baris dipilih
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this,
+                    "Pilih kontak yang ingin diubah!",
+                    "Peringatan",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int id = Integer.parseInt(tableKontak.getValueAt(row, 0).toString());
+
+        String nama = txtNama.getText().trim();
+        String telepon = txtTelepon.getText().trim();
+        String email = txtEmail.getText().trim();
+        String alamat = txtAlamat.getText().trim();
+
+        // Validasi input kosong
+        if (nama.isEmpty() || telepon.isEmpty() || email.isEmpty() || alamat.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "Semua field harus diisi!",
+                    "Input Tidak Lengkap",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // Validasi telepon hanya angka
+        if (!telepon.matches("\\d+")) {
+            JOptionPane.showMessageDialog(this,
+                    "Nomor telepon hanya boleh angka!",
+                    "Input Salah",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Validasi panjang telepon
+        if (telepon.length() < 8 || telepon.length() > 12) {
+            JOptionPane.showMessageDialog(this,
+                    "Nomor telepon harus 8–12 digit!",
+                    "Input Tidak Valid",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Cek nomor telepon duplikat tetapi abaikan dirinya sendiri
+        if (kontakController.isDuplicatePhoneNumber(telepon, id)) {
+            JOptionPane.showMessageDialog(this,
+                    "Nomor telepon sudah digunakan oleh kontak lain!",
+                    "Duplikasi Nomor",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Konfirmasi update
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Apakah Anda yakin ingin mengubah data kontak ini?",
+                "Konfirmasi Update",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
         );
-        JOptionPane.showMessageDialog(this,"Berhasil diubah!");
-        loadTable();
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            kontakController.updateContact(id, nama, telepon, email, alamat);
+
+            JOptionPane.showMessageDialog(this,
+                    "Kontak berhasil diperbarui!",
+                    "Sukses",
+                    JOptionPane.INFORMATION_MESSAGE);
+
+            loadTable();
+        }
+
     } catch (HeadlessException | NumberFormatException | SQLException e) {
-    }        // TODO add your handling code here:
+        JOptionPane.showMessageDialog(this,
+                "Terjadi kesalahan saat mengupdate kontak!",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+    }
     }//GEN-LAST:event_btnUpdateActionPerformed
 
     private void btnDeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDeleteActionPerformed
-        try {
-        int id = Integer.parseInt(tableKontak.getValueAt(tableKontak.getSelectedRow(), 0).toString());
+    try {
+        int row = tableKontak.getSelectedRow();
 
-        KontakController controller = new KontakController();
-        controller.deleteContact(id);
-        JOptionPane.showMessageDialog(this,"Berhasil dihapus!");
-        loadTable();
+        // Jika tidak memilih baris
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this,
+                    "Pilih kontak yang ingin dihapus!",
+                    "Peringatan",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int id = Integer.parseInt(tableKontak.getValueAt(row, 0).toString());
+
+        // Konfirmasi hapus
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Apakah Anda yakin ingin menghapus kontak ini?",
+                "Konfirmasi Hapus",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            // Jika user pilih IYA
+            kontakController.deleteContact(id);
+
+            JOptionPane.showMessageDialog(this,
+                    "Kontak berhasil dihapus!",
+                    "Sukses",
+                    JOptionPane.INFORMATION_MESSAGE);
+
+            loadTable(); // reload data
+        }
+
     } catch (HeadlessException | NumberFormatException | SQLException e) {
-    }        // TODO add your handling code here:
+        JOptionPane.showMessageDialog(this,
+                "Terjadi kesalahan saat menghapus!",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+    }
     }//GEN-LAST:event_btnDeleteActionPerformed
 
     private void tblKontakMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tblKontakMouseClicked
@@ -431,6 +592,24 @@ private void loadTable() {
     } catch (SQLException e) {
     }        // TODO add your handling code here:
     }//GEN-LAST:event_txtCariKeyTyped
+
+    private void txtTeleponKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtTeleponKeyTyped
+    char c = evt.getKeyChar();
+
+    // Hanya boleh angka
+    if (!Character.isDigit(c)) {
+        evt.consume();  // blokir selain angka
+    }
+
+    // Maksimal 12 digit
+    if (txtTelepon.getText().length() >= 12) {
+        evt.consume();
+    } 
+    }//GEN-LAST:event_txtTeleponKeyTyped
+
+    private void txtNamaFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_txtNamaFocusGained
+
+    }//GEN-LAST:event_txtNamaFocusGained
 private void clear() {
     txtNama.setText("");
     txtTelepon.setText("");
